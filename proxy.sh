@@ -3,13 +3,11 @@
 echo "Starting system optimization for high-load UDP proxy server..."
 
 # Enable IP forwarding
-echo "Enabling IP forwarding..."
 echo 1 > /proc/sys/net/ipv4/ip_forward
 grep -qxF 'echo 1 > /proc/sys/net/ipv4/ip_forward' /etc/rc.local || echo 'echo 1 > /proc/sys/net/ipv4/ip_forward' >> /etc/rc.local
 chmod +x /etc/rc.local
 
-# Increase file descriptors and process limits
-echo "Configuring ulimits..."
+# Set file limits
 cat <<EOF >> /etc/security/limits.conf
 * soft nofile 1048576
 * hard nofile 1048576
@@ -17,14 +15,15 @@ cat <<EOF >> /etc/security/limits.conf
 * hard nproc 65535
 EOF
 
-# Increase system-wide file descriptor limit
-echo "fs.file-max = 2097152" >> /etc/sysctl.conf
+# Clean old sysctl network tuning values
+echo "Cleaning old network settings from /etc/sysctl.conf..."
+sed -i '/^net\./d' /etc/sysctl.conf
+sed -i '/^fs\.file-max/d' /etc/sysctl.conf
 
-# Optimize kernel parameters for high performance
-echo "Tuning sysctl parameters..."
+# Add new sysctl values
 cat <<EOF >> /etc/sysctl.conf
+fs.file-max = 2097152
 
-# Network tuning
 net.core.rmem_max = 134217728
 net.core.wmem_max = 134217728
 net.core.rmem_default = 67108864
@@ -52,19 +51,16 @@ net.ipv4.conf.default.accept_redirects = 0
 net.ipv4.conf.default.send_redirects = 0
 EOF
 
-# Apply sysctl settings
-echo "Applying sysctl settings..."
+# Apply new sysctl settings
 sysctl -p
 
-# Enable BBR congestion control
-echo "Loading BBR..."
+# Load BBR
 modprobe tcp_bbr
 echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
 sysctl -w net.ipv4.tcp_congestion_control=bbr
 
-# Add cron job to restart v2bx every 3 hours
-echo "Setting cron job for v2bx restart..."
+# Set cron job for v2bx restart every 3 hours
 (crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
 
 echo ""
-echo "✅ Optimization complete. A reboot is recommended to fully apply all settings."
+echo "✅ Optimization complete. Reboot recommended."
