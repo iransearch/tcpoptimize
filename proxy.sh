@@ -15,14 +15,9 @@ cat <<EOF >> /etc/security/limits.conf
 * hard nproc 65535
 EOF
 
-# Clean old related sysctl values
-echo "Cleaning existing net.* and fs.file-max settings from sysctl.conf..."
-sed -i '/^[[:space:]]*#*[[:space:]]*net\./d' /etc/sysctl.conf
-sed -i '/^[[:space:]]*#*[[:space:]]*fs\.file-max/d' /etc/sysctl.conf
-sed -i '/^[[:space:]]*#*[[:space:]]*vm\./d' /etc/sysctl.conf
-
-# Add optimized sysctl settings
-cat <<EOF >> /etc/sysctl.conf
+# Overwrite sysctl.conf completely with optimized values
+echo "Overwriting /etc/sysctl.conf..."
+cat <<EOF > /etc/sysctl.conf
 # Memory
 fs.file-max = 2097152
 vm.min_free_kbytes = 65536
@@ -60,7 +55,7 @@ net.ipv4.tcp_wmem = 4096 65536 268435456
 # Port range
 net.ipv4.ip_local_port_range = 10000 65535
 
-# Security / redirect protections
+# Redirect protections
 net.ipv4.conf.all.accept_redirects = 0
 net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.default.accept_redirects = 0
@@ -70,7 +65,7 @@ EOF
 # Apply sysctl settings
 sysctl -p
 
-# Load BBR if not loaded
+# Load BBR
 modprobe tcp_bbr
 echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
 sysctl -w net.ipv4.tcp_congestion_control=bbr
@@ -79,4 +74,4 @@ sysctl -w net.ipv4.tcp_congestion_control=bbr
 (crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
 
 echo ""
-echo "✅ System optimization completed successfully. A reboot is recommended."
+echo "✅ All settings have been fully replaced and applied. A reboot is recommended."
