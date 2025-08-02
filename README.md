@@ -1,1 +1,1 @@
-sudo bash <(curl -sSL https://raw.githubusercontent.com/iransearch/tcpoptimize/main/proxy.sh)
+<pre> ## 🚀 Quick Install Run this one-liner to automatically optimize your server for high-performance proxy: ```bash curl -sSL https://raw.githubusercontent.com/iransearch/tcpoptimize/main/proxy.sh -o /tmp/proxy.sh && sudo bash /tmp/proxy.sh ``` </pre>
