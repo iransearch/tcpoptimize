@@ -70,8 +70,9 @@ modprobe tcp_bbr
 echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
 sysctl -w net.ipv4.tcp_congestion_control=bbr
 
-# Set cron job to restart v2bx every 3 hours
-(crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
+# Add v2bx auto restart cronjob if not already present
+crontab -l 2>/dev/null | grep -qF '/usr/bin/v2bx restart' || (crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
+
 
 echo ""
 echo "✅ All settings have been fully replaced and applied. A reboot is recommended."
