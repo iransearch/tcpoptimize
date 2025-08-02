@@ -17,8 +17,9 @@ EOF
 
 # Clean old sysctl network tuning values
 echo "Cleaning old network settings from /etc/sysctl.conf..."
-sed -i '/^net\./d' /etc/sysctl.conf
-sed -i '/^fs\.file-max/d' /etc/sysctl.conf
+sed -i '/^[[:space:]]*#*[[:space:]]*net\./d' /etc/sysctl.conf
+sed -i '/^[[:space:]]*#*[[:space:]]*fs\.file-max/d' /etc/sysctl.conf
+
 
 # Add new sysctl values
 cat <<EOF >> /etc/sysctl.conf
