@@ -70,8 +70,23 @@ modprobe tcp_bbr
 echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
 sysctl -w net.ipv4.tcp_congestion_control=bbr
 
+# Backup /etc/V2bX/config.json every 48 hours
+backup_v2bx_config() {
+    backup_dir="/etc/V2bX/backups"
+    mkdir -p "$backup_dir"
+    timestamp=$(date +"%Y%m%d_%H%M")
+    cp /etc/V2bX/config.json "$backup_dir/config-$timestamp.bak"
+}
+
 # Add v2bx auto restart cronjob if not already present
 crontab -l 2>/dev/null | grep -qF '/usr/bin/v2bx restart' || (crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
+
+crontab -l 2>/dev/null | grep -qF 'backup_v2bx_config.sh' || (
+  echo "0 3 */2 * * /usr/local/bin/backup_v2bx_config.sh" >> /tmp/crontab.tmp
+  crontab -l 2>/dev/null >> /tmp/crontab.tmp
+  sort -u /tmp/crontab.tmp | crontab -
+  rm /tmp/crontab.tmp
+)
 
 
 echo ""
