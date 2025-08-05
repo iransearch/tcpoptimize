@@ -69,24 +69,33 @@ sysctl -p
 modprobe tcp_bbr
 echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
 sysctl -w net.ipv4.tcp_congestion_control=bbr
+# Enable IP forwarding
+echo "1" > /proc/sys/net/ipv4/ip_forward
+grep -q "net.ipv4.ip_forward" /etc/sysctl.conf || echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
 
-# Backup /etc/V2bX/config.json every 48 hours
-backup_v2bx_config() {
-    backup_dir="/etc/V2bX/backups"
-    mkdir -p "$backup_dir"
-    timestamp=$(date +"%Y%m%d_%H%M")
-    cp /etc/V2bX/config.json "$backup_dir/config-$timestamp.bak"
-}
+# Create backup script
+cat > /usr/local/bin/backup_v2bx_config.sh << 'EOF'
+#!/bin/bash
+backup_dir="/etc/V2bX/backups"
+mkdir -p "$backup_dir"
+timestamp=$(date +"%Y%m%d_%H%M")
+cp /etc/V2bX/config.json "$backup_dir/config-$timestamp.bak"
+find "$backup_dir" -name "config-*.bak" -type f -mtime +10 -exec rm -f {} \;
+EOF
 
-# Add v2bx auto restart cronjob if not already present
-crontab -l 2>/dev/null | grep -qF '/usr/bin/v2bx restart' || (crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart") | crontab -
+chmod +x /usr/local/bin/backup_v2bx_config.sh
 
+# Add cronjob to restart v2bx every 3 hours if not already present
+crontab -l 2>/dev/null | grep -qF '/usr/bin/v2bx restart' || (
+  crontab -l 2>/dev/null; echo "0 */3 * * * /usr/bin/v2bx restart"
+) | crontab -
+
+# Add cronjob to backup config.json every 48 hours if not already present
 crontab -l 2>/dev/null | grep -qF 'backup_v2bx_config.sh' || (
-  echo "0 3 */2 * * /usr/local/bin/backup_v2bx_config.sh" >> /tmp/crontab.tmp
-  crontab -l 2>/dev/null >> /tmp/crontab.tmp
-  sort -u /tmp/crontab.tmp | crontab -
-  rm /tmp/crontab.tmp
-)
+  crontab -l 2>/dev/null; echo "0 3 */2 * * /usr/local/bin/backup_v2bx_config.sh"
+) | crontab -
+
+echo "✅ Optimization and backup setup complete."
 
 
 echo ""
